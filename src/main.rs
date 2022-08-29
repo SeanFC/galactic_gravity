@@ -28,12 +28,15 @@ pub fn main() {
     let mut rng = thread_rng();
 
     const NUM_PARTICLES: usize = 200;
-    const MAX_SINGLE_AXIS_VEL: f64 = 100.0;
-    let mut particle_position: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; 200];
-    let mut particle_velocity: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; 200];
-    let mut particle_acceleration: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; 200];
+    const MAX_SINGLE_AXIS_VEL: f64 = 0.0001;//100.0;
+    const MAX_ABS_ACCEL: f64 = 200.0;
+    let particle_mass: f64 = 1.0*10f64.powf(15.0);
+    let gravitational_constant: f64 = 6.67430*10.0f64.powf(-11.0);
+
+    let mut particle_position: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; NUM_PARTICLES];
+    let mut particle_velocity: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; NUM_PARTICLES];
     for i in 0..NUM_PARTICLES {
-        particle_position[i] = [f64::from(rng.gen_range(0, window_width)), f64::from(rng.gen_range(0, window_width))];
+        particle_position[i] = [f64::from(rng.gen_range(100, window_width-100)), f64::from(rng.gen_range(100, window_height-100))];
         particle_velocity[i] = [f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL))];
     }
 
@@ -59,9 +62,30 @@ pub fn main() {
             }
         }
 
+        let pre_loop_particle_position = particle_position.clone(); 
+
         // Update particle velocity as x_1 = x_0 + dt * (vel + dt* accel)
         for (cur_pos, cur_vel) in particle_position.iter_mut().zip(particle_velocity.iter_mut()) {
-            
+            let mut cur_acc_x: f64 = 0.0;
+            let mut cur_acc_y: f64 = 0.0;
+
+            for i in 0..NUM_PARTICLES {
+                let mut add_accel = calc_gravitational_force(gravitational_constant, *cur_pos, pre_loop_particle_position[i], particle_mass);
+
+                if add_accel[0].abs() > MAX_ABS_ACCEL {
+                    add_accel[0] = add_accel[0]/add_accel[0].abs()* MAX_ABS_ACCEL 
+                }
+                if add_accel[1].abs() > MAX_ABS_ACCEL {
+                    add_accel[1] = add_accel[1]/add_accel[1].abs()* MAX_ABS_ACCEL 
+                }
+
+                cur_acc_x += add_accel[0];
+                cur_acc_y += add_accel[1];
+            }
+            //println!("{cur_acc_x}, {cur_acc_y}");
+
+            cur_vel[0] += time_step *cur_acc_x;
+            cur_vel[1] += time_step *cur_acc_y;
 
             let likely_x = cur_pos[0] + time_step *cur_vel[0];
             let likely_y = cur_pos[1] + time_step *cur_vel[1];
@@ -96,4 +120,19 @@ pub fn main() {
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
     }
+}
+
+fn calc_gravitational_force(gravitational_constant: f64, pos_first: [f64; 2], pos_second: [f64; 2], mass: f64)->[f64; 2] {
+    let rel_x = pos_second[0] - pos_first[0];
+    let rel_y = pos_second[1] - pos_first[1];
+    let dist_sq = rel_x.powf(2.0) + rel_y.powf(2.0);
+    let dist = dist_sq.sqrt();
+
+
+    if dist_sq == 0.0 {
+        return [0.0, 0.0]
+    }
+    let orth_force_magnitude = gravitational_constant * mass / dist_sq / dist;
+
+    return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
 }
