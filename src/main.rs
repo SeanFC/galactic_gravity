@@ -11,6 +11,25 @@ use std::time::Duration;
 use rand::thread_rng;
 use rand::Rng;
 
+fn initialise_particles(window_width:u32, window_height:u32) -> (Vec<[f64; 2]>, Vec<[f64; 2]>){
+    let mut rng = thread_rng();
+    const NUM_PARTICLES: usize = 6;
+    const MAX_SINGLE_AXIS_VEL: f64 = 0.0001;//100.0;
+    
+    
+
+    let initial_position = [0.0,0.0];
+    let mut particle_position = vec![initial_position; NUM_PARTICLES];
+    let mut particle_velocity = vec![[0.0,0.0]; NUM_PARTICLES];
+
+    for i in 0..NUM_PARTICLES {
+        particle_position[i] = [f64::from(rng.gen_range(100, window_width-100)), f64::from(rng.gen_range(100, window_height-100))];
+        particle_velocity[i] = [f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL))];
+    }
+    
+    (particle_position, particle_velocity)
+}
+
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -25,23 +44,14 @@ pub fn main() {
 
     let mut canvas = window.into_canvas().build().unwrap();
 
-    let mut rng = thread_rng();
-
-    const NUM_PARTICLES: usize = 6;
-    const MAX_SINGLE_AXIS_VEL: f64 = 0.0001;//100.0;
+    const PARTICLE_SIZE: u32 = 4;
+    const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
     const MAX_ABS_ACCEL: f64 = 200.0;
     let particle_mass: f64 = 1.0*10f64.powf(15.0);
     let gravitational_constant: f64 = 6.67430*10.0f64.powf(-11.0);
 
-    let mut particle_position: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; NUM_PARTICLES];
-    let mut particle_velocity: [[f64; 2]; NUM_PARTICLES] = [[0.0,0.0]; NUM_PARTICLES];
-    for i in 0..NUM_PARTICLES {
-        particle_position[i] = [f64::from(rng.gen_range(100, window_width-100)), f64::from(rng.gen_range(100, window_height-100))];
-        particle_velocity[i] = [f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL))];
-    }
+    let (mut particle_position, mut particle_velocity) =  initialise_particles(window_width, window_height);
 
-    const PARTICLE_SIZE: u32 = 4;
-    const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
        
     canvas.set_draw_color(Color::RGB(0, 255, 255));
     canvas.clear();
@@ -55,7 +65,11 @@ pub fn main() {
         for event in event_pump.poll_iter() {
             match event {
                 Event::MouseButtonDown{x, y, ..}  => {
-                    particle_position[0] = [f64::from(x), f64::from(y)];
+                    let half_num_to_add = 2;
+                    for i in -half_num_to_add..half_num_to_add {
+                        particle_position.push([f64::from(x + i), f64::from(y+ i)]);
+                        particle_velocity.push([0.0, 0.0]);
+                    }
 
                 },
                 Event::Quit {..} |
@@ -73,7 +87,7 @@ pub fn main() {
             let mut cur_acc_x: f64 = 0.0;
             let mut cur_acc_y: f64 = 0.0;
 
-            for i in 0..NUM_PARTICLES {
+            for i in 0..pre_loop_particle_position.len() {
                 let mut add_accel = calc_gravitational_force(gravitational_constant, *cur_pos, pre_loop_particle_position[i], particle_mass);
 
                 if add_accel[0].abs() > MAX_ABS_ACCEL {
@@ -114,7 +128,7 @@ pub fn main() {
 
         // Draw the particles
         canvas.set_draw_color(PARTICLE_COLOUR);
-        for cur_pos in particle_position {
+        for cur_pos in &particle_position {
             //TODO: These should be some sort of 2D object
             let x = cur_pos[0];
             let y = cur_pos[1];
