@@ -27,7 +27,7 @@ pub fn main() {
 
     let mut rng = thread_rng();
 
-    const NUM_PARTICLES: usize = 200;
+    const NUM_PARTICLES: usize = 6;
     const MAX_SINGLE_AXIS_VEL: f64 = 0.0001;//100.0;
     const MAX_ABS_ACCEL: f64 = 200.0;
     let particle_mass: f64 = 1.0*10f64.powf(15.0);
@@ -54,6 +54,10 @@ pub fn main() {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
+                Event::MouseButtonDown{x, y, ..}  => {
+                    particle_position[0] = [f64::from(x), f64::from(y)];
+
+                },
                 Event::Quit {..} |
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
