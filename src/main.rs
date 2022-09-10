@@ -5,19 +5,20 @@ use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Rect;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 use std::time::Duration;
 
 use rand::thread_rng;
 use rand::Rng;
 
+/// Initialise the state of several particles 
 fn initialise_particles(window_width:u32, window_height:u32) -> (Vec<[f64; 2]>, Vec<[f64; 2]>){
     let mut rng = thread_rng();
     const NUM_PARTICLES: usize = 6;
     const MAX_SINGLE_AXIS_VEL: f64 = 0.0001;//100.0;
     
-    
-
     let initial_position = [0.0,0.0];
     let mut particle_position = vec![initial_position; NUM_PARTICLES];
     let mut particle_velocity = vec![[0.0,0.0]; NUM_PARTICLES];
@@ -100,7 +101,6 @@ pub fn main() {
                 cur_acc_x += add_accel[0];
                 cur_acc_y += add_accel[1];
             }
-            //println!("{cur_acc_x}, {cur_acc_y}");
 
             cur_vel[0] += time_step *cur_acc_x;
             cur_vel[1] += time_step *cur_acc_y;
@@ -126,17 +126,22 @@ pub fn main() {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
 
-        // Draw the particles
-        canvas.set_draw_color(PARTICLE_COLOUR);
-        for cur_pos in &particle_position {
-            //TODO: These should be some sort of 2D object
-            let x = cur_pos[0];
-            let y = cur_pos[1];
-            let _result = canvas.fill_rect(Rect::new(x as i32, y as i32, PARTICLE_SIZE, PARTICLE_SIZE));
-        }
+        // Draw
+        draw_particles(&mut canvas, &particle_position, PARTICLE_SIZE, PARTICLE_COLOUR);
+        
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
+    }
+}
+
+/// Draw a given set of particles onto a canvas 
+/// TODO: No idea about the mutability etc here
+fn draw_particles(canvas: &mut Canvas<Window>, positions: &Vec<[f64; 2]>, particle_size: u32, colour: Color) {
+    canvas.set_draw_color(colour);
+    for cur_pos in positions{
+        //TODO: These should be some sort of 2D object
+        let _result = canvas.fill_rect(Rect::new(cur_pos[0] as i32, cur_pos[1] as i32, particle_size, particle_size));
     }
 }
 
