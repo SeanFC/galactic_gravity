@@ -13,28 +13,41 @@ use std::time::Duration;
 use rand::thread_rng;
 use rand::Rng;
 
+struct Point2D {
+    x : f64,
+    y : f64,
+}
+
+struct Particle {
+    position: Point2D,
+    velocity : Point2D,
+}
+
 /// Initialise the state of several particles
-fn initialise_particles(window_width: u32, window_height: u32) -> (Vec<[f64; 2]>, Vec<[f64; 2]>) {
+fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> {
     let mut rng = thread_rng();
     const NUM_PARTICLES: usize = 6;
     const MAX_SINGLE_AXIS_VEL: f64 = 0.0001; //100.0;
 
-    let initial_position = [0.0, 0.0];
-    let mut particle_position = vec![initial_position; NUM_PARTICLES];
-    let mut particle_velocity = vec![[0.0, 0.0]; NUM_PARTICLES];
+    let mut galaxy: <Particle> = Vec::new();
 
     for i in 0..NUM_PARTICLES {
-        particle_position[i] = [
-            f64::from(rng.gen_range(100, window_width - 100)),
-            f64::from(rng.gen_range(100, window_height - 100)),
-        ];
-        particle_velocity[i] = [
-            f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-            f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-        ];
+        galaxy.push(
+            Particle(
+                position:Point2D(
+                    x:f64::from(rng.gen_range(100, window_width - 100)), 
+                    y:f64::from(rng.gen_range(100, window_width - 100)),
+                    ), 
+                velocity:Point2D(
+                    x:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), 
+                    y:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
+                    )
+                )
+            )
+            
     }
 
-    (particle_position, particle_velocity)
+    galaxy
 }
 
 pub fn main() {
