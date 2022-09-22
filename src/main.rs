@@ -29,22 +29,21 @@ fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> 
     const NUM_PARTICLES: usize = 6;
     const MAX_SINGLE_AXIS_VEL: f64 = 0.0001; //100.0;
 
-    let mut galaxy: <Particle> = Vec::new();
+    let mut galaxy: Vec<Particle> = Vec::new();
 
     for i in 0..NUM_PARTICLES {
         galaxy.push(
-            Particle(
-                position:Point2D(
+            Particle{
+                position:Point2D{
                     x:f64::from(rng.gen_range(100, window_width - 100)), 
                     y:f64::from(rng.gen_range(100, window_width - 100)),
-                    ), 
-                velocity:Point2D(
+                }, 
+                velocity:Point2D{
                     x:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), 
                     y:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-                    )
-                )
-            )
-            
+                }
+            }
+        )
     }
 
     galaxy
@@ -71,8 +70,10 @@ pub fn main() {
     let particle_mass: f64 = 1.0 * 10f64.powf(15.0);
     let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
 
-    let (mut particle_position, mut particle_velocity) =
-        initialise_particles(window_width, window_height);
+    //let (mut particle_position, mut particle_velocity) =
+    //    initialise_particles(window_width, window_height);
+    let mut galaxy = initialise_particles(window_width, window_height);
+
 
     canvas.set_draw_color(Color::RGB(0, 255, 255));
     canvas.clear();
@@ -88,8 +89,18 @@ pub fn main() {
                 Event::MouseButtonDown { x, y, .. } => {
                     let half_num_to_add = 2;
                     for i in -half_num_to_add..half_num_to_add {
-                        particle_position.push([f64::from(x + i), f64::from(y + i)]);
-                        particle_velocity.push([0.0, 0.0]);
+                        galaxy.push(
+                            Particle{
+                                position: Point2D {
+                                    x:f64::from(x + i),
+                                    y: f64::from(y + i),
+                                },
+                                velocity: Point2D{
+                                    x: 0.0,
+                                    y: 0.0,
+                                }
+                            }
+                        )
                     }
                 }
                 Event::Quit { .. }
