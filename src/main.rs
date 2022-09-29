@@ -16,14 +16,14 @@ use rand::Rng;
 //TODO: Don't think I really want to be using these copies and clones
 #[derive(Clone, Copy)]
 struct Point2D {
-    x : f64,
-    y : f64,
+    x: f64,
+    y: f64,
 }
 
 #[derive(Clone)]
 struct Particle {
     position: Point2D,
-    velocity : Point2D,
+    velocity: Point2D,
 }
 
 /// Initialise the state of several particles
@@ -35,18 +35,16 @@ fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> 
     let mut galaxy: Vec<Particle> = Vec::new();
 
     for _ in 0..NUM_PARTICLES {
-        galaxy.push(
-            Particle{
-                position:Point2D{
-                    x:f64::from(rng.gen_range(100, window_width - 100)), 
-                    y:f64::from(rng.gen_range(100, window_height- 100)),
-                }, 
-                velocity:Point2D{
-                    x:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), 
-                    y:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-                }
-            }
-        )
+        galaxy.push(Particle {
+            position: Point2D {
+                x: f64::from(rng.gen_range(100, window_width - 100)),
+                y: f64::from(rng.gen_range(100, window_height - 100)),
+            },
+            velocity: Point2D {
+                x: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
+                y: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
+            },
+        })
     }
 
     galaxy
@@ -77,7 +75,6 @@ pub fn main() {
     //    initialise_particles(window_width, window_height);
     let mut galaxy = initialise_particles(window_width, window_height);
 
-
     canvas.set_draw_color(Color::RGB(0, 255, 255));
     canvas.clear();
     canvas.present();
@@ -92,18 +89,13 @@ pub fn main() {
                 Event::MouseButtonDown { x, y, .. } => {
                     let half_num_to_add = 2;
                     for i in -half_num_to_add..half_num_to_add {
-                        galaxy.push(
-                            Particle{
-                                position: Point2D {
-                                    x:f64::from(x + i),
-                                    y: f64::from(y + i),
-                                },
-                                velocity: Point2D{
-                                    x: 0.0,
-                                    y: 0.0,
-                                }
-                            }
-                        )
+                        galaxy.push(Particle {
+                            position: Point2D {
+                                x: f64::from(x + i),
+                                y: f64::from(y + i),
+                            },
+                            velocity: Point2D { x: 0.0, y: 0.0 },
+                        })
                     }
                 }
                 Event::Quit { .. }
@@ -118,8 +110,7 @@ pub fn main() {
         let pre_loop_galaxy = galaxy.clone();
 
         // Update particle velocity as x_1 = x_0 + dt * (vel + dt* accel)
-        for particle in galaxy.iter_mut()
-        {
+        for particle in galaxy.iter_mut() {
             let mut cur_acc_x: f64 = 0.0;
             let mut cur_acc_y: f64 = 0.0;
 
@@ -167,12 +158,7 @@ pub fn main() {
         canvas.clear();
 
         // Draw
-        draw_particles(
-            &mut canvas,
-            &galaxy,
-            PARTICLE_SIZE,
-            PARTICLE_COLOUR,
-        );
+        draw_particles(&mut canvas, &galaxy, PARTICLE_SIZE, PARTICLE_COLOUR);
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
@@ -188,7 +174,7 @@ fn draw_particles(
     colour: Color,
 ) {
     canvas.set_draw_color(colour);
-    for cur_particle in particles{
+    for cur_particle in particles {
         //TODO: These should be some sort of 2D object
         let _result = canvas.fill_rect(Rect::new(
             cur_particle.position.x as i32,
