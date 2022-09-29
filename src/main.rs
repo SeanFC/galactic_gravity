@@ -13,11 +13,14 @@ use std::time::Duration;
 use rand::thread_rng;
 use rand::Rng;
 
+//TODO: Don't think I really want to be using these copies and clones
+#[derive(Clone, Copy)]
 struct Point2D {
     x : f64,
     y : f64,
 }
 
+#[derive(Clone)]
 struct Particle {
     position: Point2D,
     velocity : Point2D,
@@ -31,12 +34,12 @@ fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> 
 
     let mut galaxy: Vec<Particle> = Vec::new();
 
-    for i in 0..NUM_PARTICLES {
+    for _ in 0..NUM_PARTICLES {
         galaxy.push(
             Particle{
                 position:Point2D{
                     x:f64::from(rng.gen_range(100, window_width - 100)), 
-                    y:f64::from(rng.gen_range(100, window_width - 100)),
+                    y:f64::from(rng.gen_range(100, window_height- 100)),
                 }, 
                 velocity:Point2D{
                     x:f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)), 
@@ -112,21 +115,19 @@ pub fn main() {
             }
         }
 
-        let pre_loop_particle_position = particle_position.clone();
+        let pre_loop_galaxy = galaxy.clone();
 
         // Update particle velocity as x_1 = x_0 + dt * (vel + dt* accel)
-        for (cur_pos, cur_vel) in particle_position
-            .iter_mut()
-            .zip(particle_velocity.iter_mut())
+        for particle in galaxy.iter_mut()
         {
             let mut cur_acc_x: f64 = 0.0;
             let mut cur_acc_y: f64 = 0.0;
 
-            for i in 0..pre_loop_particle_position.len() {
+            for i in 0..pre_loop_galaxy.len() {
                 let mut add_accel = calc_gravitational_force(
                     gravitational_constant,
-                    *cur_pos,
-                    pre_loop_particle_position[i],
+                    particle.position,
+                    pre_loop_galaxy[i].position,
                     particle_mass,
                 );
 
@@ -141,23 +142,23 @@ pub fn main() {
                 cur_acc_y += add_accel[1];
             }
 
-            cur_vel[0] += time_step * cur_acc_x;
-            cur_vel[1] += time_step * cur_acc_y;
+            particle.velocity.x += time_step * cur_acc_x;
+            particle.velocity.y += time_step * cur_acc_y;
 
-            let likely_x = cur_pos[0] + time_step * cur_vel[0];
-            let likely_y = cur_pos[1] + time_step * cur_vel[1];
+            let likely_x = particle.position.x + time_step * particle.velocity.x;
+            let likely_y = particle.position.y + time_step * particle.velocity.y;
 
             // Bounce off walls
             if likely_x < 0.0 || likely_x > f64::from(window_width) {
-                cur_vel[0] = -cur_vel[0]
+                particle.velocity.x = -particle.velocity.x
             } else {
-                cur_pos[0] = likely_x
+                particle.position.x = likely_x
             }
 
             if likely_y < 0.0 || likely_y > f64::from(window_height) {
-                cur_vel[1] = -cur_vel[1]
+                particle.velocity.y = -particle.velocity.y
             } else {
-                cur_pos[1] = likely_y
+                particle.position.y = likely_y
             }
         }
 
@@ -168,7 +169,7 @@ pub fn main() {
         // Draw
         draw_particles(
             &mut canvas,
-            &particle_position,
+            &galaxy,
             PARTICLE_SIZE,
             PARTICLE_COLOUR,
         );
@@ -182,16 +183,16 @@ pub fn main() {
 /// TODO: No idea about the mutability etc here
 fn draw_particles(
     canvas: &mut Canvas<Window>,
-    positions: &Vec<[f64; 2]>,
+    particles: &Vec<Particle>,
     particle_size: u32,
     colour: Color,
 ) {
     canvas.set_draw_color(colour);
-    for cur_pos in positions {
+    for cur_particle in particles{
         //TODO: These should be some sort of 2D object
         let _result = canvas.fill_rect(Rect::new(
-            cur_pos[0] as i32,
-            cur_pos[1] as i32,
+            cur_particle.position.x as i32,
+            cur_particle.position.y as i32,
             particle_size,
             particle_size,
         ));
@@ -200,12 +201,12 @@ fn draw_particles(
 
 fn calc_gravitational_force(
     gravitational_constant: f64,
-    pos_first: [f64; 2],
-    pos_second: [f64; 2],
+    pos_first: Point2D,
+    pos_second: Point2D,
     mass: f64,
 ) -> [f64; 2] {
-    let rel_x = pos_second[0] - pos_first[0];
-    let rel_y = pos_second[1] - pos_first[1];
+    let rel_x = pos_second.x - pos_first.x;
+    let rel_y = pos_second.y - pos_first.y;
     let dist_sq = rel_x.powf(2.0) + rel_y.powf(2.0);
     let dist = dist_sq.sqrt();
 
