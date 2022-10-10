@@ -1,8 +1,10 @@
 [package]
 name = "galactic_galaxy"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [dependencies]
 sdl2 = "0.35"
 rand = "0.7.3"
+anyhow = "1.0"
+emscripten_main_loop = "0.1.1"

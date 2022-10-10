@@ -1,5 +1,6 @@
 extern crate rand;
 extern crate sdl2;
+extern crate emscripten_main_loop;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -7,11 +8,15 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use sdl2::Sdl;
 
 use std::time::Duration;
 
 use rand::thread_rng;
 use rand::Rng;
+
+//#[cfg(target_os = "emscripten")]
+//pub mod emscripten;
 
 //TODO: Don't think I really want to be using these copies and clones
 #[derive(Clone, Copy)]
@@ -50,46 +55,58 @@ fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> 
     galaxy
 }
 
-pub fn main() {
-    let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
+pub struct Game {
+    canvas : Canvas<Window>,
+    sdl_context : Sdl,
+    galaxy : Vec<Particle>,
+}
 
-    let window_width: u32 = 800;
-    let window_height: u32 = 600;
+impl Game {
+    pub fn new() -> Result<Self, anyhow::Error> {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem
-        .window("GALACTIC GRAVITY", window_width, window_height)
-        .position_centered()
-        .build()
-        .unwrap();
+        let window_width: u32 = 800;
+        let window_height: u32 = 600;
 
-    let mut canvas = window.into_canvas().build().unwrap();
+        let window = video_subsystem
+            .window("GALACTIC GRAVITY", window_width, window_height)
+            .position_centered()
+            .build()
+            .unwrap();
 
-    const PARTICLE_SIZE: u32 = 4;
-    const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
-    const MAX_ABS_ACCEL: f64 = 200.0;
-    let particle_mass: f64 = 1.0 * 10f64.powf(15.0);
-    let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
+        let canvas = window.into_canvas().build().unwrap();
+        let galaxy = initialise_particles(window_width, window_height);
 
-    //let (mut particle_position, mut particle_velocity) =
-    //    initialise_particles(window_width, window_height);
-    let mut galaxy = initialise_particles(window_width, window_height);
+        Ok(Self { canvas , galaxy, sdl_context})
+    }
+}
 
-    canvas.set_draw_color(Color::RGB(0, 255, 255));
-    canvas.clear();
-    canvas.present();
-    let mut event_pump = sdl_context.event_pump().unwrap();
 
-    const TARGET_FPS: u32 = 60;
-    let time_step: f64 = 1.0 / f64::from(TARGET_FPS as f64);
+impl emscripten_main_loop::MainLoop for Game {
+    fn main_loop(&mut self) -> emscripten_main_loop::MainLoopEvent {
 
-    'running: loop {
+        let window_width: u32 = 800;
+        let window_height: u32 = 600;
+
+        const PARTICLE_SIZE: u32 = 4;
+        const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
+        const MAX_ABS_ACCEL: f64 = 200.0;
+        let particle_mass: f64 = 1.0 * 10f64.powf(15.0);
+        let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
+
+        
+        let mut event_pump = self.sdl_context.event_pump().unwrap();
+
+        const TARGET_FPS: u32 = 60;
+        let time_step: f64 = 1.0 / f64::from(TARGET_FPS as f64);
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::MouseButtonDown { x, y, .. } => {
                     let half_num_to_add = 2;
                     for i in -half_num_to_add..half_num_to_add {
-                        galaxy.push(Particle {
+                        self.galaxy.push(Particle {
                             position: Point2D {
                                 x: f64::from(x + i),
                                 y: f64::from(y + i),
@@ -102,15 +119,15 @@ pub fn main() {
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
-                } => break 'running,
+                } => return emscripten_main_loop::MainLoopEvent::Terminate,
                 _ => {}
             }
         }
 
-        let pre_loop_galaxy = galaxy.clone();
+        let pre_loop_galaxy = self.galaxy.clone();
 
         // Update particle velocity as x_1 = x_0 + dt * (vel + dt* accel)
-        for particle in galaxy.iter_mut() {
+        for particle in self.galaxy.iter_mut() {
             let mut cur_acc_x: f64 = 0.0;
             let mut cur_acc_y: f64 = 0.0;
 
@@ -153,16 +170,25 @@ pub fn main() {
             }
         }
 
-        // Clear the frame
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
-
+        // Clear the background
+        self.canvas.set_draw_color(Color::RGB(0, 0, 0));
+        self.canvas.clear();
+        
         // Draw
-        draw_particles(&mut canvas, &galaxy, PARTICLE_SIZE, PARTICLE_COLOUR);
+        draw_particles(&mut self.canvas, &self.galaxy, PARTICLE_SIZE, PARTICLE_COLOUR);
 
-        canvas.present();
+        self.canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
+
+        emscripten_main_loop::MainLoopEvent::Continue
     }
+}
+
+pub fn main() {
+    let game = Game::new().unwrap();
+
+    // Start the main looping
+    emscripten_main_loop::run(game);
 }
 
 /// Draw a given set of particles onto a canvas
@@ -203,3 +229,4 @@ fn calc_gravitational_force(
 
     return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
 }
+
