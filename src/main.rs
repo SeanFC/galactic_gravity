@@ -1,6 +1,6 @@
+extern crate emscripten_main_loop;
 extern crate rand;
 extern crate sdl2;
-extern crate emscripten_main_loop;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -14,9 +14,6 @@ use std::time::Duration;
 
 use rand::thread_rng;
 use rand::Rng;
-
-//#[cfg(target_os = "emscripten")]
-//pub mod emscripten;
 
 //TODO: Don't think I really want to be using these copies and clones
 #[derive(Clone, Copy)]
@@ -56,9 +53,9 @@ fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> 
 }
 
 pub struct Game {
-    canvas : Canvas<Window>,
-    sdl_context : Sdl,
-    galaxy : Vec<Particle>,
+    canvas: Canvas<Window>,
+    sdl_context: Sdl,
+    galaxy: Vec<Particle>,
 }
 
 impl Game {
@@ -78,14 +75,16 @@ impl Game {
         let canvas = window.into_canvas().build().unwrap();
         let galaxy = initialise_particles(window_width, window_height);
 
-        Ok(Self { canvas , galaxy, sdl_context})
+        Ok(Self {
+            canvas,
+            galaxy,
+            sdl_context,
+        })
     }
 }
 
-
 impl emscripten_main_loop::MainLoop for Game {
     fn main_loop(&mut self) -> emscripten_main_loop::MainLoopEvent {
-
         let window_width: u32 = 800;
         let window_height: u32 = 600;
 
@@ -95,7 +94,6 @@ impl emscripten_main_loop::MainLoop for Game {
         let particle_mass: f64 = 1.0 * 10f64.powf(15.0);
         let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
 
-        
         let mut event_pump = self.sdl_context.event_pump().unwrap();
 
         const TARGET_FPS: u32 = 60;
@@ -173,9 +171,14 @@ impl emscripten_main_loop::MainLoop for Game {
         // Clear the background
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
-        
+
         // Draw
-        draw_particles(&mut self.canvas, &self.galaxy, PARTICLE_SIZE, PARTICLE_COLOUR);
+        draw_particles(
+            &mut self.canvas,
+            &self.galaxy,
+            PARTICLE_SIZE,
+            PARTICLE_COLOUR,
+        );
 
         self.canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
@@ -229,4 +232,3 @@ fn calc_gravitational_force(
 
     return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
 }
-

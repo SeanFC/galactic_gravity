@@ -6,6 +6,7 @@ Also, a test bed to learn:
 * WebAssembly
 * SDL2
 * Github Pages
+* Nix
 
 ## Running
 
