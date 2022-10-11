@@ -1,15 +1,23 @@
-{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/3590f02e7d5760e52072c1a729ee2250b5560746.tar.gz") {} }:
-
-pkgs.mkShell {
-  buildInputs = [
-    pkgs.cargo
-    pkgs.SDL2
-    pkgs.emscripten
+let
+  # Rolling updates, not deterministic.
+  pkgs = import (fetchTarball("channel:nixpkgs-unstable")) {};
+in pkgs.mkShell {
+  buildInputs = [ 
+    pkgs.cargo 
+    pkgs.rustc 
+    pkgs.SDL2 
+    pkgs.emscripten 
   ];
-
   shellHook = ''
     rustup default stable
-    cargo build
+
+    git clone https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    ./emsdk install 1.39.20
+    ./emsdk activate 1.39.20
+    source ./emsdk_env.sh
+    cd ..
+
+    #cargo build -r --target wasm32-unknown-emscripten
   '';
 }
-
