@@ -9,11 +9,6 @@ jobs:
       - name: Checkout 
         uses: actions/checkout@v3
 
-      - name: Install and Build 
-        uses: cachix/install-nix-action@v15
-        run: |
-          ./scripts/build.sh
-
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
