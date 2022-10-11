@@ -4,7 +4,7 @@ let
 in pkgs.mkShell {
   buildInputs = [ 
     pkgs.cargo 
-    pkgs.rustc 
+    pkgs.rustup
     pkgs.SDL2 
     pkgs.emscripten 
   ];
@@ -19,6 +19,6 @@ in pkgs.mkShell {
     source ./emsdk_env.sh
     cd ..
 
-    #cargo build -r --target wasm32-unknown-emscripten
+    cargo build --target wasm32-unknown-emscripten
   '';
 }
