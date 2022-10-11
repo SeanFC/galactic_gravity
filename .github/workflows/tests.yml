@@ -1,4 +1,4 @@
-name: "Tests"
+name: "Test"
 on:
   pull_request:
   push:
@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2.4.0
-    - run: install -d -m755 -o $(id -u) -g $(id -g) /nix
-    - run: curl -L https://nixos.org/nix/install | sh
-    - run: source $HOME/.nix-profile/etc/profile.d/nix.sh
-    - run: nix-shell --run "cargo test"
+    - uses: cachix/install-nix-action@v15
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix-build
