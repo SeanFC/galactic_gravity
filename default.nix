@@ -10,6 +10,7 @@ in pkgs.mkShell {
   ];
   shellHook = ''
     rustup default stable
+    rustup target add wasm32-unknown-emscripten
 
     git clone https://github.com/emscripten-core/emsdk.git
     cd emsdk
