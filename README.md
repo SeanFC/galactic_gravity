@@ -1,6 +1,6 @@
 # Galactic Gravity
 
-[Live demo](seanfc.github.io/galactic_gravity/)
+[Live demo](https://seanfc.github.io/galactic_gravity/)
 
 A sandbox to play around with particles and planets acting under gravity. 
 
