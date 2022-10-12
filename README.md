@@ -1,32 +1,37 @@
 # Galactic Gravity
 
+[Live demo](seanfc.github.io/galactic_gravity/)
+
 A sandbox to play around with particles and planets acting under gravity. 
-Also, a test bed to learn:
-* Rust
-* WebAssembly
-* SDL2
-* Github Pages
-* Nix
 
-## Running
+## Run - Desktop
 
-This project is managed by [Cargo](https://doc.rust-lang.org/cargo/), make sure it is installed in your environment.
+The rust part of the project is managed by [Cargo](https://doc.rust-lang.org/cargo/), make sure it is installed in your environment.
 Then, to run the project, use the command
 ```
 cargo run
 ```
 The project should respond to all the usual Cargo commands.
 
-## Notes
-* Good docs [here](http://web.archive.org/web/20201110143709/https://blog.therocode.net/2020/10/a-guide-to-rust-sdl2-emscripten)
-* Pos need 
+## Run - Web
+### Build
+
+To build the project for the web run
 ```
-git clone https://github.com/emscripten-core/emsdk.git
-cd emsdk
-./emsdk install 1.39.20
-./emsdk activate 1.39.20
-source ./emsdk_env.sh
+./scripts/build.sh
 ```
-* Build with `cargo build --target=wasm32-unknown-emscripten`
-* Run webserver with `python -m http.server -d target/wasm32--unknown-emscripten/debug`
-* Cool rust wasm project [here](https://github.com/sandydoo/flux)
+which will place the results in `build/`.
+Running a server targeting this directory will server the project to a web page. 
+If `python` is available this can be done by running
+```
+python -m http.server -d build
+```
+and visiting the suggest location, likely [https://0.0.0.0:8000](https://0.0.0.0:8000)
+
+### Nix
+
+The build environment for the project for the web is handled by [Nix](https://nixos.org/). 
+Make sure you have Nix installed and run
+```
+nix-shell --command "cargo build -r --target wasm32-unknown-emscripten"
+```
