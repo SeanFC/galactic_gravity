@@ -19,6 +19,6 @@ in pkgs.mkShell {
     source ./emsdk_env.sh
     cd ..
 
-    cargo build --target wasm32-unknown-emscripten
+    #cargo build --target wasm32-unknown-emscripten
   '';
 }
