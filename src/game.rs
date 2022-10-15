@@ -14,10 +14,46 @@ use std::time::Duration;
 use rand::thread_rng;
 use rand::Rng;
 
+pub struct Galaxy {
+    particles: Vec<Particle>,
+    width: u32,
+    height: u32,
+}
+
+impl Galaxy {
+    /// Initialise the state of several particles
+    pub fn new(width: u32, height: u32) -> Galaxy {
+        let mut rng = thread_rng();
+        const NUM_PARTICLES: usize = 6;
+        const MAX_SINGLE_AXIS_VEL: f64 = 0.0001; //100.0;
+
+        let mut particles: Vec<Particle> = Vec::new();
+
+        for _ in 0..NUM_PARTICLES {
+            particles.push(Particle {
+                position: Point2D {
+                    x: f64::from(rng.gen_range(100, width - 100)),
+                    y: f64::from(rng.gen_range(100, height - 100)),
+                },
+                velocity: Point2D {
+                    x: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
+                    y: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
+                },
+            })
+        }
+
+        Self {
+            particles,
+            width,
+            height
+        }
+    }
+}
+
 pub struct Game {
     canvas: Canvas<Window>,
     sdl_context: Sdl,
-    galaxy: Vec<Particle>,
+    galaxy: Galaxy,
 }
 
 impl Game {
@@ -35,7 +71,7 @@ impl Game {
             .unwrap();
 
         let canvas = window.into_canvas().build().unwrap();
-        let galaxy = initialise_particles(window_width, window_height);
+        let galaxy = Galaxy::new(window_width, window_height);
 
         Ok(Self {
             canvas,
@@ -47,9 +83,6 @@ impl Game {
 
 impl emscripten_main_loop::MainLoop for Game {
     fn main_loop(&mut self) -> emscripten_main_loop::MainLoopEvent {
-        let window_width: u32 = 800;
-        let window_height: u32 = 600;
-
         const PARTICLE_SIZE: u32 = 4;
         const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
         let particle_mass: f64 = 1.0 * 10f64.powf(7.5);
@@ -64,7 +97,7 @@ impl emscripten_main_loop::MainLoop for Game {
                 Event::MouseButtonDown { x, y, .. } => {
                     let half_num_to_add = 2;
                     for i in -half_num_to_add..half_num_to_add {
-                        self.galaxy.push(Particle {
+                        self.galaxy.particles.push(Particle {
                             position: Point2D {
                                 x: f64::from(x + i),
                                 y: f64::from(y + i),
@@ -86,8 +119,6 @@ impl emscripten_main_loop::MainLoop for Game {
         update_physics(
             &mut self.galaxy,
             time_step,
-            window_width,
-            window_height,
             particle_mass,
         );
 
@@ -98,7 +129,7 @@ impl emscripten_main_loop::MainLoop for Game {
         // Draw
         draw_particles(
             &mut self.canvas,
-            &self.galaxy,
+            &self.galaxy.particles,
             PARTICLE_SIZE,
             PARTICLE_COLOUR,
         );
@@ -124,43 +155,19 @@ struct Particle {
     velocity: Point2D,
 }
 
-/// Initialise the state of several particles
-fn initialise_particles(window_width: u32, window_height: u32) -> Vec<Particle> {
-    let mut rng = thread_rng();
-    const NUM_PARTICLES: usize = 6;
-    const MAX_SINGLE_AXIS_VEL: f64 = 0.0001; //100.0;
 
-    let mut galaxy: Vec<Particle> = Vec::new();
-
-    for _ in 0..NUM_PARTICLES {
-        galaxy.push(Particle {
-            position: Point2D {
-                x: f64::from(rng.gen_range(100, window_width - 100)),
-                y: f64::from(rng.gen_range(100, window_height - 100)),
-            },
-            velocity: Point2D {
-                x: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-                y: f64::from(rng.gen_range(-MAX_SINGLE_AXIS_VEL, MAX_SINGLE_AXIS_VEL)),
-            },
-        })
-    }
-
-    galaxy
-}
 
 /// Update particle velocity
 /// x_{t+1} = x_{t} + dt * (vel + dt* accel)
 fn update_physics(
-    galaxy: &mut Vec<Particle>,
+    galaxy: &mut Galaxy,
     time_step: f64,
-    window_width: u32,
-    window_height: u32,
     particle_mass: f64,
 ) {
     const MAX_ABS_ACCEL: f64 = 200.0;
 
-    let pre_loop_galaxy = galaxy.clone();
-    for particle in galaxy.iter_mut() {
+    let pre_loop_galaxy = galaxy.particles.clone();
+    for particle in galaxy.particles.iter_mut() {
         let mut cur_acc_x: f64 = 0.0;
         let mut cur_acc_y: f64 = 0.0;
 
@@ -189,13 +196,13 @@ fn update_physics(
         let likely_y = particle.position.y + time_step * particle.velocity.y;
 
         // Bounce off walls
-        if likely_x < 0.0 || likely_x > f64::from(window_width) {
+        if likely_x < 0.0 || likely_x > f64::from(galaxy.width) {
             particle.velocity.x = -particle.velocity.x
         } else {
             particle.position.x = likely_x
         }
 
-        if likely_y < 0.0 || likely_y > f64::from(window_height) {
+        if likely_y < 0.0 || likely_y > f64::from(galaxy.height) {
             particle.velocity.y = -particle.velocity.y
         } else {
             particle.position.y = likely_y
