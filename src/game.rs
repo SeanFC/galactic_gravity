@@ -14,6 +14,9 @@ use std::time::Duration;
 use rand::thread_rng;
 use rand::Rng;
 
+use crate::scene::SDLDrawable;
+use crate::scene::Tickable;
+
 pub struct Galaxy {
     particles: Vec<Particle>,
     width: u32,
@@ -45,19 +48,15 @@ impl Galaxy {
         Self {
             particles,
             width,
-            height
+            height,
         }
     }
-}
-
-trait SDLDrawable {
-    fn draw(&self, canvas: &mut Canvas<Window>, particle_size: u32,colour: Color);
 }
 
 impl SDLDrawable for Galaxy {
     /// Draw a given set of particles onto a canvas
     /// TODO: No idea about the mutability etc here
-    fn draw(&self, canvas: &mut Canvas<Window>, particle_size: u32,colour: Color) {
+    fn draw(&self, canvas: &mut Canvas<Window>, particle_size: u32, colour: Color) {
         canvas.set_draw_color(colour);
         for cur_particle in &self.particles {
             //TODO: These should be some sort of 2D object
@@ -69,22 +68,12 @@ impl SDLDrawable for Galaxy {
             ));
         }
     }
-
-}
-
-trait Tickable {
-    fn push_forward(&mut self, time_delta: f64, particle_mass: f64);
 }
 
 impl Tickable for Galaxy {
-
     /// Update particle velocity
     /// x_{t+1} = x_{t} + dt * (vel + dt* accel)
-    fn push_forward(
-        &mut self,
-        time_step: f64,
-        particle_mass: f64,
-    ) {
+    fn push_forward(&mut self, time_step: f64, particle_mass: f64) {
         const MAX_ABS_ACCEL: f64 = 200.0;
 
         let pre_loop_galaxy = self.particles.clone();
@@ -148,8 +137,6 @@ fn calc_gravitational_force(pos_first: Point2D, pos_second: Point2D, mass: f64) 
 
     return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
 }
-
-
 
 pub struct Game {
     canvas: Canvas<Window>,
@@ -225,11 +212,8 @@ impl emscripten_main_loop::MainLoop for Game {
         self.canvas.clear();
 
         // Draw scene objects
-        self.galaxy.draw(
-            &mut self.canvas,
-            PARTICLE_SIZE,
-            PARTICLE_COLOUR,
-        );
+        self.galaxy
+            .draw(&mut self.canvas, PARTICLE_SIZE, PARTICLE_COLOUR);
         self.canvas.present();
 
         // Wait for next ticket
@@ -251,5 +235,3 @@ struct Particle {
     position: Point2D,
     velocity: Point2D,
 }
-
-

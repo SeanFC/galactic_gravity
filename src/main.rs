@@ -1,6 +1,7 @@
 extern crate emscripten_main_loop;
 
 pub mod game;
+mod scene;
 
 /// Main program loop
 pub fn main() {
