@@ -50,6 +50,107 @@ impl Galaxy {
     }
 }
 
+trait SDLDrawable {
+    fn draw(&self, canvas: &mut Canvas<Window>, particle_size: u32,colour: Color);
+}
+
+impl SDLDrawable for Galaxy {
+    /// Draw a given set of particles onto a canvas
+    /// TODO: No idea about the mutability etc here
+    fn draw(&self, canvas: &mut Canvas<Window>, particle_size: u32,colour: Color) {
+        canvas.set_draw_color(colour);
+        for cur_particle in &self.particles {
+            //TODO: These should be some sort of 2D object
+            let _result = canvas.fill_rect(Rect::new(
+                cur_particle.position.x as i32,
+                cur_particle.position.y as i32,
+                particle_size,
+                particle_size,
+            ));
+        }
+    }
+
+}
+
+trait Tickable {
+    fn push_forward(&mut self, time_delta: f64, particle_mass: f64);
+}
+
+impl Tickable for Galaxy {
+
+    /// Update particle velocity
+    /// x_{t+1} = x_{t} + dt * (vel + dt* accel)
+    fn push_forward(
+        &mut self,
+        time_step: f64,
+        particle_mass: f64,
+    ) {
+        const MAX_ABS_ACCEL: f64 = 200.0;
+
+        let pre_loop_galaxy = self.particles.clone();
+        for particle in self.particles.iter_mut() {
+            let mut cur_acc_x: f64 = 0.0;
+            let mut cur_acc_y: f64 = 0.0;
+
+            for i in 0..pre_loop_galaxy.len() {
+                let mut add_accel = calc_gravitational_force(
+                    particle.position,
+                    pre_loop_galaxy[i].position,
+                    particle_mass,
+                );
+
+                if add_accel[0].abs() > MAX_ABS_ACCEL {
+                    add_accel[0] = add_accel[0] / add_accel[0].abs() * MAX_ABS_ACCEL
+                }
+                if add_accel[1].abs() > MAX_ABS_ACCEL {
+                    add_accel[1] = add_accel[1] / add_accel[1].abs() * MAX_ABS_ACCEL
+                }
+
+                cur_acc_x += add_accel[0];
+                cur_acc_y += add_accel[1];
+            }
+
+            particle.velocity.x += time_step * cur_acc_x;
+            particle.velocity.y += time_step * cur_acc_y;
+
+            let likely_x = particle.position.x + time_step * particle.velocity.x;
+            let likely_y = particle.position.y + time_step * particle.velocity.y;
+
+            // Bounce off walls
+            if likely_x < 0.0 || likely_x > f64::from(self.width) {
+                particle.velocity.x = -particle.velocity.x
+            } else {
+                particle.position.x = likely_x
+            }
+
+            if likely_y < 0.0 || likely_y > f64::from(self.height) {
+                particle.velocity.y = -particle.velocity.y
+            } else {
+                particle.position.y = likely_y
+            }
+        }
+    }
+}
+
+/// Calculate the gravitational force from the first to the second of two particles
+fn calc_gravitational_force(pos_first: Point2D, pos_second: Point2D, mass: f64) -> [f64; 2] {
+    let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
+
+    let rel_x = pos_second.x - pos_first.x;
+    let rel_y = pos_second.y - pos_first.y;
+    let dist_sq = rel_x.powf(2.0) + rel_y.powf(2.0);
+    let dist = dist_sq.sqrt();
+
+    if dist_sq == 0.0 {
+        return [0.0, 0.0];
+    }
+    let orth_force_magnitude = gravitational_constant * mass.powf(2.0) / dist_sq / dist;
+
+    return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
+}
+
+
+
 pub struct Game {
     canvas: Canvas<Window>,
     sdl_context: Sdl,
@@ -83,8 +184,8 @@ impl Game {
 
 impl emscripten_main_loop::MainLoop for Game {
     fn main_loop(&mut self) -> emscripten_main_loop::MainLoopEvent {
-        const PARTICLE_SIZE: u32 = 4;
         const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
+        const PARTICLE_SIZE: u32 = 4;
         let particle_mass: f64 = 1.0 * 10f64.powf(7.5);
 
         const TARGET_FPS: u32 = 60;
@@ -115,21 +216,17 @@ impl emscripten_main_loop::MainLoop for Game {
             }
         }
 
-        // Process physics
-        update_physics(
-            &mut self.galaxy,
-            time_step,
-            particle_mass,
-        );
+        // Push elements forwards in time
+        //TODO: mass definitely shouldn't be here
+        self.galaxy.push_forward(time_step, particle_mass);
 
         // Clear the background
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
 
-        // Draw
-        draw_particles(
+        // Draw scene objects
+        self.galaxy.draw(
             &mut self.canvas,
-            &self.galaxy.particles,
             PARTICLE_SIZE,
             PARTICLE_COLOUR,
         );
@@ -156,93 +253,3 @@ struct Particle {
 }
 
 
-
-/// Update particle velocity
-/// x_{t+1} = x_{t} + dt * (vel + dt* accel)
-fn update_physics(
-    galaxy: &mut Galaxy,
-    time_step: f64,
-    particle_mass: f64,
-) {
-    const MAX_ABS_ACCEL: f64 = 200.0;
-
-    let pre_loop_galaxy = galaxy.particles.clone();
-    for particle in galaxy.particles.iter_mut() {
-        let mut cur_acc_x: f64 = 0.0;
-        let mut cur_acc_y: f64 = 0.0;
-
-        for i in 0..pre_loop_galaxy.len() {
-            let mut add_accel = calc_gravitational_force(
-                particle.position,
-                pre_loop_galaxy[i].position,
-                particle_mass,
-            );
-
-            if add_accel[0].abs() > MAX_ABS_ACCEL {
-                add_accel[0] = add_accel[0] / add_accel[0].abs() * MAX_ABS_ACCEL
-            }
-            if add_accel[1].abs() > MAX_ABS_ACCEL {
-                add_accel[1] = add_accel[1] / add_accel[1].abs() * MAX_ABS_ACCEL
-            }
-
-            cur_acc_x += add_accel[0];
-            cur_acc_y += add_accel[1];
-        }
-
-        particle.velocity.x += time_step * cur_acc_x;
-        particle.velocity.y += time_step * cur_acc_y;
-
-        let likely_x = particle.position.x + time_step * particle.velocity.x;
-        let likely_y = particle.position.y + time_step * particle.velocity.y;
-
-        // Bounce off walls
-        if likely_x < 0.0 || likely_x > f64::from(galaxy.width) {
-            particle.velocity.x = -particle.velocity.x
-        } else {
-            particle.position.x = likely_x
-        }
-
-        if likely_y < 0.0 || likely_y > f64::from(galaxy.height) {
-            particle.velocity.y = -particle.velocity.y
-        } else {
-            particle.position.y = likely_y
-        }
-    }
-}
-
-/// Draw a given set of particles onto a canvas
-/// TODO: No idea about the mutability etc here
-fn draw_particles(
-    canvas: &mut Canvas<Window>,
-    particles: &Vec<Particle>,
-    particle_size: u32,
-    colour: Color,
-) {
-    canvas.set_draw_color(colour);
-    for cur_particle in particles {
-        //TODO: These should be some sort of 2D object
-        let _result = canvas.fill_rect(Rect::new(
-            cur_particle.position.x as i32,
-            cur_particle.position.y as i32,
-            particle_size,
-            particle_size,
-        ));
-    }
-}
-
-/// Calculate the gravitational force from the first to the second of two particles
-fn calc_gravitational_force(pos_first: Point2D, pos_second: Point2D, mass: f64) -> [f64; 2] {
-    let gravitational_constant: f64 = 6.67430 * 10.0f64.powf(-11.0);
-
-    let rel_x = pos_second.x - pos_first.x;
-    let rel_y = pos_second.y - pos_first.y;
-    let dist_sq = rel_x.powf(2.0) + rel_y.powf(2.0);
-    let dist = dist_sq.sqrt();
-
-    if dist_sq == 0.0 {
-        return [0.0, 0.0];
-    }
-    let orth_force_magnitude = gravitational_constant * mass.powf(2.0) / dist_sq / dist;
-
-    return [orth_force_magnitude * rel_x, orth_force_magnitude * rel_y];
-}
