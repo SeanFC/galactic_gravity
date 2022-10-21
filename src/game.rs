@@ -149,14 +149,14 @@ impl Game {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
 
-        let window_width: u32 = 800;
-        let window_height: u32 = 600;
-
         let window = video_subsystem
-            .window("GALACTIC GRAVITY", window_width, window_height)
+            .window("Galactic Gravity", 800, 600)
             .position_centered()
+            .fullscreen_desktop()
             .build()
             .unwrap();
+
+        let (window_width, window_height) = window.size();
 
         let canvas = window.into_canvas().build().unwrap();
         let galaxy = Galaxy::new(window_width, window_height);
@@ -172,7 +172,7 @@ impl Game {
 impl emscripten_main_loop::MainLoop for Game {
     fn main_loop(&mut self) -> emscripten_main_loop::MainLoopEvent {
         const PARTICLE_COLOUR: Color = Color::RGB(255, 255, 255);
-        const PARTICLE_SIZE: u32 = 4;
+        const PARTICLE_SIZE: u32 = 2;
         let particle_mass: f64 = 1.0 * 10f64.powf(7.5);
 
         const TARGET_FPS: u32 = 60;
