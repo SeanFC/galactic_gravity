@@ -2,12 +2,14 @@ extern crate rand;
 extern crate sdl2;
 
 use sdl2::event::Event;
+use sdl2::event::WindowEvent;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::Sdl;
+use sdl2::render::TextureQuery;
 
 use std::time::Duration;
 
@@ -152,7 +154,7 @@ impl Game {
         let window = video_subsystem
             .window("Galactic Gravity", 800, 600)
             .position_centered()
-            .fullscreen_desktop()
+            //.fullscreen_desktop()
             .build()
             .unwrap();
 
@@ -194,6 +196,15 @@ impl emscripten_main_loop::MainLoop for Game {
                         })
                     }
                 }
+                Event::Window { win_event, .. } => {
+                    match win_event {
+                        WindowEvent::Resized(x,y)  => {
+                            println!("Resize {} {}", x, y);
+                        }
+                        _ => {}
+                    }
+                }
+                
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
@@ -212,11 +223,41 @@ impl emscripten_main_loop::MainLoop for Game {
         self.canvas.clear();
 
         // Draw scene objects
-        self.galaxy
-            .draw(&mut self.canvas, PARTICLE_SIZE, PARTICLE_COLOUR);
+        self.galaxy.draw(&mut self.canvas, PARTICLE_SIZE, PARTICLE_COLOUR);
+        //self.canvas.present();
+
+
+        //const FONT_PATH: &str = "./Swansea-q3pd.ttf";
+        const FONT_PATH: &str = "/usr/share/fonts/TTF/DejaVuSans.ttf";
+        let texture_creator = self.canvas.texture_creator();
+        let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string()).unwrap();
+        let font = ttf_context.load_font(FONT_PATH, 30).unwrap();
+        //font.set_style(sdl2::ttf::FontStyle::BOLD);
+
+        // render a surface, and convert it to a texture bound to the canvas
+        let surface = font
+            .render("Hello Rust!")
+            .blended(Color::RGBA(255, 0, 0, 255))
+            .map_err(|e| e.to_string())
+            .unwrap();
+        let texture = texture_creator
+            .create_texture_from_surface(&surface)
+            .map_err(|e| e.to_string())
+            .unwrap();
+
+        self.canvas.set_draw_color(Color::RGBA(195, 217, 255, 255));
+        //self.canvas.clear();
+
+        let TextureQuery { width, height, .. } = texture.query();
+
+        let target = Rect::new(100, 100, width, height);
+
+        let _result = self.canvas.copy(&texture, None, Some(target));
         self.canvas.present();
 
-        // Wait for next ticket
+
+
+        // Wait for next tick
         // TODO: This isn't true FPS since we're not taking into account calculation time
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / TARGET_FPS));
         emscripten_main_loop::MainLoopEvent::Continue

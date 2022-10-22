@@ -7,6 +7,7 @@ in pkgs.mkShell {
     pkgs.rustup
     pkgs.SDL2 
     pkgs.emscripten 
+    pkgs.SDL2_ttf
   ];
   shellHook = ''
     rustup default stable

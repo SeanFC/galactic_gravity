@@ -4,7 +4,11 @@ version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-sdl2 = "0.35"
 rand = "0.7.3"
 anyhow = "1.0"
 emscripten_main_loop = "0.1.1"
+
+[dependencies.sdl2]
+default-features = false
+version = "0.35"
+features = ["ttf"]

@@ -35,3 +35,6 @@ Make sure you have Nix installed and run
 ```
 nix-shell --command "cargo build -r --target wasm32-unknown-emscripten"
 ```
+
+## Notes
+* need `sdl2` and `sdl2_ttf`
