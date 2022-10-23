@@ -9,7 +9,7 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::Sdl;
-use sdl2::render::TextureQuery;
+//use sdl2::render::TextureQuery;
 
 use std::time::Duration;
 
@@ -151,16 +151,21 @@ impl Game {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
 
+        // Figure out the maximum screen size (note that on web this will be the screen, no the
+        // viewport of the browser
+        let cur_disp_mode = video_subsystem.current_display_mode(0).unwrap();
+
         let window = video_subsystem
-            .window("Galactic Gravity", 800, 600)
+            .window("Galactic Gravity", (cur_disp_mode.w as u32)*7/10, (cur_disp_mode.h as u32)*7/10)
             .position_centered()
-            //.fullscreen_desktop()
             .build()
             .unwrap();
-
         let (window_width, window_height) = window.size();
-
+       
+        // Make a canvas to draw to
         let canvas = window.into_canvas().build().unwrap();
+
+        // Make a galaxy the size of the window
         let galaxy = Galaxy::new(window_width, window_height);
 
         Ok(Self {
@@ -228,31 +233,48 @@ impl emscripten_main_loop::MainLoop for Game {
 
 
         //const FONT_PATH: &str = "./Swansea-q3pd.ttf";
-        const FONT_PATH: &str = "/usr/share/fonts/TTF/DejaVuSans.ttf";
-        let texture_creator = self.canvas.texture_creator();
-        let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string()).unwrap();
-        let font = ttf_context.load_font(FONT_PATH, 30).unwrap();
-        //font.set_style(sdl2::ttf::FontStyle::BOLD);
+        //const FONT_PATH: &str = "/usr/share/fonts/TTF/DejaVuSans.ttf";
+        //let texture_creator = self.canvas.texture_creator();
+        //let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string()).unwrap();
+        //let font = ttf_context.load_font(FONT_PATH, 30).unwrap();
+        ////font.set_style(sdl2::ttf::FontStyle::BOLD);
 
-        // render a surface, and convert it to a texture bound to the canvas
-        let surface = font
-            .render("Hello Rust!")
-            .blended(Color::RGBA(255, 0, 0, 255))
-            .map_err(|e| e.to_string())
-            .unwrap();
-        let texture = texture_creator
-            .create_texture_from_surface(&surface)
-            .map_err(|e| e.to_string())
-            .unwrap();
+        //// render a surface, and convert it to a texture bound to the canvas
+        //let surface = font
+        //    .render("Hello Rust!")
+        //    .blended(Color::RGBA(255, 0, 0, 255))
+        //    .map_err(|e| e.to_string())
+        //    .unwrap();
+        //let texture = texture_creator
+        //    .create_texture_from_surface(&surface)
+        //    .map_err(|e| e.to_string())
+        //    .unwrap();
+
+        //self.canvas.set_draw_color(Color::RGBA(195, 217, 255, 255));
+        ////self.canvas.clear();
+
+        //let TextureQuery { width, height, .. } = texture.query();
+
+        //let target = Rect::new(100, 100, width, height);
+
+        //let _result = self.canvas.copy(&texture, None, Some(target));
 
         self.canvas.set_draw_color(Color::RGBA(195, 217, 255, 255));
-        //self.canvas.clear();
+        let (width, height) = self.canvas.output_size().unwrap();
+        //let _result = self.canvas.fill_rect(Rect::new(
+        //        100,
+        //        100,
+        //        width/10,
+        //        height/10,
+        //    ));
 
-        let TextureQuery { width, height, .. } = texture.query();
-
-        let target = Rect::new(100, 100, width, height);
-
-        let _result = self.canvas.copy(&texture, None, Some(target));
+        let _result = self.canvas.draw_rect(Rect::new(
+                0,
+                0,
+                width,
+                height,
+            ));
+        
         self.canvas.present();
 
 
